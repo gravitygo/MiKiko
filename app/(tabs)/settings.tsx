@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -80,10 +81,14 @@ function Divider() {
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }} edges={['top']}>
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 32 }}>
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 100 }}
+      >
         <View className="px-4 py-6">
           <Text style={{ color: colors.text }} className="text-2xl font-bold">
             Settings
@@ -95,12 +100,14 @@ export default function SettingsScreen() {
             icon="wallet-outline"
             title="Accounts"
             subtitle="Manage your accounts"
+            onPress={() => router.push('/accounts')}
           />
           <Divider />
           <SettingsItem
             icon="grid-outline"
             title="Categories"
             subtitle="Customize categories"
+            onPress={() => router.push('/categories')}
           />
         </SettingsSection>
 
@@ -151,7 +158,7 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

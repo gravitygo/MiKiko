@@ -36,14 +36,19 @@ UI → Hooks → Service → Repository → Database
 - `app/(tabs)/settings.tsx` - Settings screen
 
 ### 🚧 Partial (Placeholders)
-- `app/(tabs)/index.tsx` - Dashboard (placeholder)
-- `app/(tabs)/budgets.tsx` - Budgets (placeholder)
+- `app/(tabs)/budgets.tsx` - Budgets (in progress)
 
 ### ❌ Not Started
 - Voice module
 - AI module
-- Dashboard implementation
-- Budget UI implementation
+
+### ✅ Recently Completed
+- `app/(tabs)/index.tsx` - Dashboard with Bento Box UI
+- `components/dashboard/` - Dashboard components (BalanceCard, QuickAddCard, CategoryCard, BudgetSummaryCard, RecentTransactionItem)
+- `app/categories.tsx` - Category management screen with icon picker
+- `app/accounts.tsx` - Account management screen
+- Icon rendering fix across all screens (Ionicons instead of text)
+- Stack navigator routes for `accounts` and `categories` screens
 
 ---
 

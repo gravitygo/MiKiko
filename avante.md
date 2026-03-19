@@ -238,7 +238,9 @@ You MUST maintain a lightweight architecture index inside (Under MiKiko the root
 .github/context/
 ```
 
-This directory is used by AI agents to quickly understand the codebase with minimal tokens. Before you start working, you should gather the information you need in that folder, after changes of each file you should then update the context.
+This directory is used by AI agents to quickly understand the codebase with minimal tokens. Before you start working, you should gather the information you need in that folder
+
+> IMPORTANT: After each changes update the context.
 
 ---
 

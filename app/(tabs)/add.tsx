@@ -32,6 +32,9 @@ interface CategoryItemProps {
 }
 
 function CategoryItem({ category, selected, onPress }: CategoryItemProps) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+
   return (
     <Pressable
       onPress={onPress}
@@ -40,7 +43,16 @@ function CategoryItem({ category, selected, onPress }: CategoryItemProps) {
       }`}
       style={{ width: 80 }}
     >
-      <Text className="text-2xl mb-1">{category.icon}</Text>
+      <View
+        className="w-10 h-10 rounded-full items-center justify-center mb-1"
+        style={{ backgroundColor: selected ? 'rgba(255,255,255,0.2)' : category.color + '20' }}
+      >
+        <Ionicons
+          name={category.icon as any}
+          size={20}
+          color={selected ? '#FFFFFF' : category.color}
+        />
+      </View>
       <Text
         className={`text-xs text-center ${
           selected ? 'text-white' : 'text-text-primary dark:text-text-primary-dark'
@@ -67,7 +79,16 @@ function AccountItem({ account, selected, onPress }: AccountItemProps) {
         selected ? 'bg-primary' : 'bg-surface dark:bg-surface-dark'
       }`}
     >
-      <Text className="text-lg mr-2">{account.icon}</Text>
+      <View
+        className="w-8 h-8 rounded-full items-center justify-center mr-2"
+        style={{ backgroundColor: selected ? 'rgba(255,255,255,0.2)' : account.color + '20' }}
+      >
+        <Ionicons
+          name={account.icon as any}
+          size={16}
+          color={selected ? '#FFFFFF' : account.color}
+        />
+      </View>
       <Text
         className={`font-medium ${
           selected ? 'text-white' : 'text-text-primary dark:text-text-primary-dark'

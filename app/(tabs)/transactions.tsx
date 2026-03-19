@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -17,6 +18,7 @@ interface TransactionItemProps {
   transaction: Transaction;
   categoryName: string;
   categoryIcon: string;
+  categoryColor: string;
   accountName: string;
   onPress: (id: string) => void;
 }
@@ -25,6 +27,7 @@ function TransactionItem({
   transaction,
   categoryName,
   categoryIcon,
+  categoryColor,
   accountName,
   onPress,
 }: TransactionItemProps) {
@@ -43,8 +46,11 @@ function TransactionItem({
       onPress={() => onPress(transaction.id)}
       className="flex-row items-center px-4 py-3 bg-surface dark:bg-surface-dark mx-4 mb-2 rounded-bento"
     >
-      <View className="w-10 h-10 rounded-full bg-surface-hover dark:bg-surface-hover-dark items-center justify-center mr-3">
-        <Text className="text-lg">{categoryIcon}</Text>
+      <View
+        className="w-10 h-10 rounded-full items-center justify-center mr-3"
+        style={{ backgroundColor: categoryColor + '20' }}
+      >
+        <Ionicons name={categoryIcon as any} size={20} color={categoryColor} />
       </View>
 
       <View className="flex-1">
@@ -108,6 +114,7 @@ type ListItem = { type: 'header'; title: string; id: string } | { type: 'item'; 
 export default function TransactionsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -182,7 +189,8 @@ export default function TransactionsScreen() {
         <TransactionItem
           transaction={t}
           categoryName={cat?.name ?? 'Unknown'}
-          categoryIcon={cat?.icon ?? '💰'}
+          categoryIcon={cat?.icon ?? 'wallet'}
+          categoryColor={cat?.color ?? '#888888'}
           accountName={acc?.name ?? 'Unknown'}
           onPress={handlePress}
         />
@@ -205,7 +213,10 @@ export default function TransactionsScreen() {
 
   if (transactions.length === 0) {
     return (
-      <View className="flex-1 bg-background dark:bg-background-dark items-center justify-center px-8">
+      <View
+        className="flex-1 bg-background dark:bg-background-dark items-center justify-center px-8"
+        style={{ paddingTop: insets.top }}
+      >
         <View className="w-20 h-20 rounded-full bg-surface dark:bg-surface-dark items-center justify-center mb-4">
           <Ionicons name="receipt-outline" size={40} color={colors.textMuted} />
         </View>
@@ -231,7 +242,7 @@ export default function TransactionsScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} />
         }
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />
     </View>
