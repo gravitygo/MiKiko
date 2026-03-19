@@ -1,5 +1,5 @@
-import { View, Text } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import { Text, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 interface CategorySlice {
   id: string;
