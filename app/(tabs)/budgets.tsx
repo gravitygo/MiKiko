@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, RefreshControl, Modal, TextInput, Pressable } from 'react-native';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -11,6 +11,7 @@ import {
 } from '@/components/budgets';
 import { useBudgetStore } from '@/state/budget.store';
 import { useCategoryStore } from '@/state/category.store';
+import { useBudgets } from '@/hooks/use-budgets';
 import type { BudgetAlertLevel, BudgetType } from '@/modules/budget';
 
 // Mock data for demonstration
