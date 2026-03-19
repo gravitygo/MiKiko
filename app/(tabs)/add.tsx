@@ -2,15 +2,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 import { DatePickerField } from '@/components/ui/date-picker-field';
@@ -417,111 +417,115 @@ export default function AddTransactionScreen() {
 
         {/* Recurring Toggle (expense/income only) */}
         {activeTab !== 'owe' && (
-        <View className="mx-4 mt-4">
-          <View className="flex-row items-center justify-between bg-surface dark:bg-surface-dark rounded-bento px-4 py-3">
-            <View className="flex-row items-center">
-              <Ionicons name="repeat" size={20} color={colors.tint} />
-              <Text className="text-text-primary dark:text-text-primary-dark font-medium ml-2">
-                Recurring
-              </Text>
-            </View>
-            <Switch
-              value={isRecurring}
-              onValueChange={setIsRecurring}
-              trackColor={{ false: colors.surfaceHover, true: colors.tint }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-        </View>
-
-        {/* Recurring Options */}
-        {isRecurring && (
-          <View className="mx-4 mt-3">
-            <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
-              Frequency
-            </Text>
-            <View className="flex-row flex-wrap mb-3">
-              {FREQUENCIES.map((f) => (
-                <Pressable
-                  key={f.value}
-                  onPress={() => setFrequency(f.value)}
-                  className="mr-2 mb-2 px-4 py-2 rounded-bento-sm"
-                  style={{ backgroundColor: frequency === f.value ? colors.tint : colors.surfaceHover }}
-                >
-                  <Text className="font-medium" style={{ color: frequency === f.value ? '#FFFFFF' : colors.text }}>
-                    {f.label}
+          <>
+            <View className="mx-4 mt-4">
+              <View className="flex-row items-center justify-between bg-surface dark:bg-surface-dark rounded-bento px-4 py-3">
+                <View className="flex-row items-center">
+                  <Ionicons name="repeat" size={20} color={colors.tint} />
+                  <Text className="text-text-primary dark:text-text-primary-dark font-medium ml-2">
+                    Recurring
                   </Text>
-                </Pressable>
-              ))}
+                </View>
+                <Switch
+                  value={isRecurring}
+                  onValueChange={setIsRecurring}
+                  trackColor={{ false: colors.surfaceHover, true: colors.tint }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
             </View>
-            <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
-              Next Payment Date
-            </Text>
-            <DatePickerField
-              value={nextDate}
-              onChange={setNextDate}
-            />
-            <View className="h-3" />
-            <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
-              End Date (optional)
-            </Text>
-            <DatePickerField
-              value={endDate}
-              onChange={setEndDate}
-              placeholder="No end date"
-            />
-          </View>
-        )}
+
+            {/* Recurring Options */}
+            {isRecurring && (
+              <View className="mx-4 mt-3">
+                <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
+                  Frequency
+                </Text>
+                <View className="flex-row flex-wrap mb-3">
+                  {FREQUENCIES.map((f) => (
+                    <Pressable
+                      key={f.value}
+                      onPress={() => setFrequency(f.value)}
+                      className="mr-2 mb-2 px-4 py-2 rounded-bento-sm"
+                      style={{ backgroundColor: frequency === f.value ? colors.tint : colors.surfaceHover }}
+                    >
+                      <Text className="font-medium" style={{ color: frequency === f.value ? '#FFFFFF' : colors.text }}>
+                        {f.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
+                  Next Payment Date
+                </Text>
+                <DatePickerField
+                  value={nextDate}
+                  onChange={setNextDate}
+                />
+                <View className="h-3" />
+                <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
+                  End Date (optional)
+                </Text>
+                <DatePickerField
+                  value={endDate}
+                  onChange={setEndDate}
+                  placeholder="No end date"
+                />
+              </View>
+            )}
+          </>
         )}
 
         {/* Category Selection */}
         {activeTab !== 'owe' && (
-        <View className="mt-6">
-          <View className="flex-row items-center justify-between mx-4 mb-2">
-            <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium">
-              Category
-            </Text>
-            <Pressable onPress={() => router.push('/categories')}>
-              <Text style={{ color: colors.tint }} className="text-sm font-medium">Manage</Text>
-            </Pressable>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
-            <View className="flex-row flex-wrap">
-              {filteredCategories.map((category) => (
-                <CategoryItem
-                  key={category.id}
-                  category={category}
-                  selected={selectedCategoryId === category.id}
-                  onPress={() => setSelectedCategoryId(category.id)}
-                />
-              ))}
+          <>
+            <View className="mt-6">
+              <View className="flex-row items-center justify-between mx-4 mb-2">
+                <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium">
+                  Category
+                </Text>
+                <Pressable onPress={() => router.push('/categories')}>
+                  <Text style={{ color: colors.tint }} className="text-sm font-medium">Manage</Text>
+                </Pressable>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+                <View className="flex-row flex-wrap">
+                  {filteredCategories.map((category) => (
+                    <CategoryItem
+                      key={category.id}
+                      category={category}
+                      selected={selectedCategoryId === category.id}
+                      onPress={() => setSelectedCategoryId(category.id)}
+                    />
+                  ))}
+                </View>
+              </ScrollView>
             </View>
-          </ScrollView>
-        </View>
 
-        {/* Account Selection */}
-        <View className="mt-6">
-          <View className="flex-row items-center justify-between mx-4 mb-2">
-            <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium">
-              Account
-            </Text>
-            <Pressable onPress={() => router.push('/accounts')}>
-              <Text style={{ color: colors.tint }} className="text-sm font-medium">Manage</Text>
-            </Pressable>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
-            <View className="flex-row">
-              {accounts.map((account) => (
-                <AccountItem
-                  key={account.id}
-                  account={account}
-                  selected={selectedAccountId === account.id}
-                  onPress={() => setSelectedAccountId(account.id)}
-                />
-              ))}
+            {/* Account Selection */}
+            <View className="mt-6">
+              <View className="flex-row items-center justify-between mx-4 mb-2">
+                <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium">
+                  Account
+                </Text>
+                <Pressable onPress={() => router.push('/accounts')}>
+                  <Text style={{ color: colors.tint }} className="text-sm font-medium">Manage</Text>
+                </Pressable>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+                <View className="flex-row">
+                  {accounts.map((account) => (
+                    <AccountItem
+                      key={account.id}
+                      account={account}
+                      selected={selectedAccountId === account.id}
+                      onPress={() => setSelectedAccountId(account.id)}
+                    />
+                  ))}
+                </View>
+              </ScrollView>
             </View>
-          </ScrollView>
-        </View>
+          </>
         )}
 
         {/* Submit Button */}
