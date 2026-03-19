@@ -18,16 +18,18 @@ import { Colors } from '@/constants/theme';
 import { useAccounts } from '@/hooks/use-accounts';
 import { useCategories } from '@/hooks/use-categories';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useDebts } from '@/hooks/use-debts';
 import { useRecurring } from '@/hooks/use-recurring';
 import { useTransactions } from '@/hooks/use-transactions';
 import type { Account } from '@/modules/account/account.types';
 import type { Category } from '@/modules/category/category.types';
+import type { DebtDirection } from '@/modules/debt/debt.types';
 import type { RecurringFrequency } from '@/modules/recurring/recurring.types';
 import type { TransactionType } from '@/modules/transaction/transaction.types';
 import { useAccountStore } from '@/state/account.store';
 import { useCategoryStore } from '@/state/category.store';
 
-type TabType = 'expense' | 'income';
+type TabType = 'expense' | 'income' | 'owe';
 
 const FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -127,6 +129,11 @@ export default function AddTransactionScreen() {
   const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState('');
 
+  // Owe-specific state
+  const [personName, setPersonName] = useState('');
+  const [debtDirection, setDebtDirection] = useState<DebtDirection>('receivable');
+  const [debtDueDate, setDebtDueDate] = useState('');
+
   const categories = useCategoryStore((s) => s.categories);
   const accounts = useAccountStore((s) => s.accounts);
 
@@ -134,9 +141,10 @@ export default function AddTransactionScreen() {
   const { fetch: fetchAccounts } = useAccounts();
   const { add: addTransaction } = useTransactions();
   const { add: addRecurringRule } = useRecurring();
+  const { add: addDebt } = useDebts();
 
   const filteredCategories = useMemo(
-    () => categories.filter((c) => c.type === activeTab),
+    () => categories.filter((c) => c.type === (activeTab === 'owe' ? 'expense' : activeTab)),
     [categories, activeTab]
   );
 
@@ -170,12 +178,35 @@ export default function AddTransactionScreen() {
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!amount || !selectedCategoryId || !selectedAccountId) return;
-
+    if (!amount) return;
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) return;
 
     setSubmitting(true);
+
+    if (activeTab === 'owe') {
+      if (!personName.trim()) { setSubmitting(false); return; }
+
+      await addDebt({
+        personName: personName.trim(),
+        direction: debtDirection,
+        amount: parsedAmount,
+        description: description.trim() || undefined,
+        dueDate: debtDueDate || undefined,
+        categoryId: selectedCategoryId ?? undefined,
+        accountId: selectedAccountId ?? undefined,
+      });
+
+      setSubmitting(false);
+      setAmount('');
+      setDescription('');
+      setPersonName('');
+      setDebtDueDate('');
+      router.back();
+      return;
+    }
+
+    if (!selectedCategoryId || !selectedAccountId) { setSubmitting(false); return; }
 
     const transaction = await addTransaction({
       type: activeTab as TransactionType,
@@ -209,19 +240,17 @@ export default function AddTransactionScreen() {
       setEndDate('');
       router.back();
     }
-  }, [amount, description, selectedCategoryId, selectedAccountId, activeTab, addTransaction, isRecurring, addRecurringRule, frequency, nextDate, endDate]);
+  }, [amount, description, selectedCategoryId, selectedAccountId, activeTab, addTransaction, isRecurring, addRecurringRule, frequency, nextDate, endDate, personName, debtDirection, debtDueDate, addDebt]);
 
   const canSubmit = useMemo(() => {
     const parsedAmount = parseFloat(amount);
-    return (
-      !submitting &&
-      amount.length > 0 &&
-      !isNaN(parsedAmount) &&
-      parsedAmount > 0 &&
-      selectedCategoryId !== null &&
-      selectedAccountId !== null
-    );
-  }, [amount, selectedCategoryId, selectedAccountId, submitting]);
+    const validAmount = !submitting && amount.length > 0 && !isNaN(parsedAmount) && parsedAmount > 0;
+    if (!validAmount) return false;
+
+    if (activeTab === 'owe') return personName.trim().length > 0;
+
+    return selectedCategoryId !== null && selectedAccountId !== null;
+  }, [amount, selectedCategoryId, selectedAccountId, submitting, activeTab, personName]);
 
   if (loading) {
     return (
@@ -267,6 +296,20 @@ export default function AddTransactionScreen() {
               Income
             </Text>
           </Pressable>
+          <Pressable
+            onPress={() => setActiveTab('owe')}
+            className={`flex-1 py-3 rounded-bento-sm items-center ${
+              activeTab === 'owe' ? 'bg-primary' : ''
+            }`}
+          >
+            <Text
+              className={`font-semibold ${
+                activeTab === 'owe' ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+              }`}
+            >
+              Owe
+            </Text>
+          </Pressable>
         </View>
 
         {/* Amount Input */}
@@ -298,13 +341,82 @@ export default function AddTransactionScreen() {
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="What was this for?"
+            placeholder={activeTab === 'owe' ? 'e.g., Dinner at restaurant' : 'What was this for?'}
             placeholderTextColor={colors.textMuted}
             className="bg-surface dark:bg-surface-dark rounded-bento px-4 py-3 text-text-primary dark:text-text-primary-dark"
           />
         </View>
 
-        {/* Recurring Toggle */}
+        {/* Owe-specific fields */}
+        {activeTab === 'owe' && (
+          <>
+            {/* Person Name */}
+            <View className="mx-4 mt-4">
+              <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
+                Person Name
+              </Text>
+              <TextInput
+                value={personName}
+                onChangeText={setPersonName}
+                placeholder="Who owes / who you owe"
+                placeholderTextColor={colors.textMuted}
+                className="bg-surface dark:bg-surface-dark rounded-bento px-4 py-3 text-text-primary dark:text-text-primary-dark"
+              />
+            </View>
+
+            {/* Direction */}
+            <View className="mx-4 mt-4">
+              <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
+                Direction
+              </Text>
+              <View className="flex-row p-1 bg-surface dark:bg-surface-dark rounded-bento">
+                <Pressable
+                  onPress={() => setDebtDirection('receivable')}
+                  className={`flex-1 py-3 rounded-bento-sm items-center ${
+                    debtDirection === 'receivable' ? 'bg-income' : ''
+                  }`}
+                >
+                  <Text
+                    className={`font-semibold ${
+                      debtDirection === 'receivable' ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                    }`}
+                  >
+                    They owe me
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setDebtDirection('payable')}
+                  className={`flex-1 py-3 rounded-bento-sm items-center ${
+                    debtDirection === 'payable' ? 'bg-expense' : ''
+                  }`}
+                >
+                  <Text
+                    className={`font-semibold ${
+                      debtDirection === 'payable' ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                    }`}
+                  >
+                    I owe them
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Due Date */}
+            <View className="mx-4 mt-4">
+              <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
+                Due Date (optional)
+              </Text>
+              <DatePickerField
+                value={debtDueDate}
+                onChange={setDebtDueDate}
+                placeholder="No due date"
+              />
+            </View>
+          </>
+        )}
+
+        {/* Recurring Toggle (expense/income only) */}
+        {activeTab !== 'owe' && (
         <View className="mx-4 mt-4">
           <View className="flex-row items-center justify-between bg-surface dark:bg-surface-dark rounded-bento px-4 py-3">
             <View className="flex-row items-center">
@@ -360,8 +472,10 @@ export default function AddTransactionScreen() {
             />
           </View>
         )}
+        )}
 
         {/* Category Selection */}
+        {activeTab !== 'owe' && (
         <View className="mt-6">
           <View className="flex-row items-center justify-between mx-4 mb-2">
             <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium">
@@ -408,6 +522,7 @@ export default function AddTransactionScreen() {
             </View>
           </ScrollView>
         </View>
+        )}
 
         {/* Submit Button */}
         <View className="mx-4 mt-8 mb-8">
@@ -426,7 +541,9 @@ export default function AddTransactionScreen() {
                   canSubmit ? 'text-white' : 'text-text-muted dark:text-text-muted-dark'
                 }`}
               >
-                Add {activeTab === 'expense' ? 'Expense' : 'Income'}
+                {activeTab === 'owe'
+                  ? `Add ${debtDirection === 'receivable' ? 'Receivable' : 'Payable'}`
+                  : `Add ${activeTab === 'expense' ? 'Expense' : 'Income'}`}
               </Text>
             )}
           </Pressable>

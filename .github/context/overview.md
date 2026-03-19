@@ -25,24 +25,24 @@ UI → Hooks → Service → Repository → Database
 - Category module (all files)
 - Account module (all files)
 - Budget module (all files)
-- Recurring module (all files, endDate support)
-- Payable module (new — types, model, mapper, repo, service)
-- All Zustand stores (+ settings store, payable store)
-- Database schema + seeds + migrations (end_date, payables table)
+- Recurring module (all files, endDate support, processDue for reminders)
+- Debt module (replaces payable — types, model, mapper, repo, service)
+- All Zustand stores (+ settings, debt stores)
+- Database schema + seeds + migrations (end_date, payables, debts tables)
 - resetAllData() for full data wipe
 
 ### ✅ Completed (Frontend)
 - `app/(tabs)/_layout.tsx` - Tab navigator (5 tabs: home, transactions, add, budgets, settings; payables hidden)
-- `app/(tabs)/index.tsx` - Dashboard (real sparkline, empty states, DB-connected, useFocusEffect for real-time updates)
+- `app/(tabs)/index.tsx` - Dashboard (sparkline, reminders section with swipe, ghost allocated balance, useFocusEffect)
 - `app/(tabs)/transactions.tsx` - Transaction list with edit/delete modal (DatePickerField, useFocusEffect)
-- `app/(tabs)/add.tsx` - Add transaction with recurring toggle (frequency, next date, end date pickers), manage links
+- `app/(tabs)/add.tsx` - Add transaction/owe with 3 tabs (Expense | Income | Owe), recurring toggle, manage links
 - `app/(tabs)/budgets.tsx` - Budgets with create + edit/delete modals, category picker, category pie chart (useFocusEffect)
-- `app/(tabs)/payables.tsx` - Payables/utang (hidden from tabs, still accessible via route)
 - `app/(tabs)/settings.tsx` - Settings (appearance modal, currency modal, reset data button)
 - `app/accounts.tsx` - Account management (CRUD, DB-connected)
 - `app/categories.tsx` - Category management (CRUD, DB-connected)
 - `components/ui/date-picker-field.tsx` - Reusable native DateTimePicker component
-- `components/dashboard/` - Dashboard components
+- `components/dashboard/reminders-list.tsx` - Swipeable reminder cards (recurring + debts)
+- `components/dashboard/` - Dashboard components (balance card with ghost allocated)
 
 ### ❌ Not Started
 - Voice module
@@ -107,7 +107,19 @@ UI → Hooks → Service → Repository → Database
 → [Recurring Module](modules/recurring.md)
 
 - recurring transaction rules
-- auto-generates transactions on due dates
+- reminders shown on dashboard (swipe to confirm/skip)
+- does NOT auto-create transactions; user confirms via swipe
+
+---
+
+### Debts (Payables/Receivables)
+
+→ [Debt Module](modules/debt.md)
+
+- tracks who owes who
+- payable = I owe them, receivable = they owe me
+- settling creates real transaction
+- ghost allocated in balance card
 
 ---
 
@@ -118,6 +130,8 @@ UI → Hooks → Service → Repository → Database
 - `use-transactions.ts` - CRUD + fetch
 - `use-categories.ts` - CRUD + fetch
 - `use-accounts.ts` - CRUD + fetch
+- `use-debts.ts` - CRUD + fetch + settle
+- `use-recurring.ts` - CRUD + fetch
 
 ---
 

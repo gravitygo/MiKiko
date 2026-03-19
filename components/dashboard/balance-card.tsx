@@ -7,6 +7,7 @@ interface BalanceCardProps {
   totalBalance: number;
   income: number;
   expense: number;
+  committed: number;
   sparklineData?: number[];
 }
 
@@ -34,13 +35,21 @@ function MiniSparkline({ data }: { data: number[] }) {
   );
 }
 
-export function BalanceCard({ totalBalance, income, expense, sparklineData = [] }: BalanceCardProps) {
+export function BalanceCard({ totalBalance, income, expense, committed, sparklineData = [] }: BalanceCardProps) {
   const formattedBalance = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(totalBalance);
+
+  const available = totalBalance - committed;
+  const formattedAvailable = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(available);
 
   const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
@@ -53,6 +62,17 @@ export function BalanceCard({ totalBalance, income, expense, sparklineData = [] 
         <Text className="text-text-primary dark:text-text-primary-dark text-4xl font-bold tracking-tight mt-1">
           {formattedBalance}
         </Text>
+        {committed > 0 && (
+          <View className="flex-row items-center mt-1">
+            <Ionicons name="lock-closed" size={12} color="#FFBA00" />
+            <Text className="text-text-muted dark:text-text-muted-dark text-xs ml-1">
+              {formattedAvailable} available
+            </Text>
+            <Text className="text-tertiary text-xs ml-1">
+              (${committed.toLocaleString()} committed)
+            </Text>
+          </View>
+        )}
       </View>
 
       {sparklineData.length > 0 && <MiniSparkline data={sparklineData} />}

@@ -16,11 +16,17 @@ Location: `components/dashboard/`
 ### balance-card.tsx
 - `BalanceCard`: large 2x2 card showing total balance
 - displays income/expense summary with current month label
+- shows ghost allocated "committed" amount + available balance
 - includes mini sparkline graph
 
+### reminders-list.tsx
+- `RemindersList`: vertical list of swipeable reminder cards
+- `ReminderCard`: swipe right = confirm (paid/received), swipe left = skip
+- shows recurring due items + unsettled debts
+- uses react-native-gesture-handler Swipeable
+
 ### quick-add-card.tsx
-- `QuickAddCard`: medium 2x1 shortcut to add transaction
-- navigates to `/add` on press
+- `QuickAddCard`: medium 2x1 shortcut (removed from dashboard)
 
 ### category-card.tsx
 - `CategoryCard`: small 1x1 card for category spending

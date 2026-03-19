@@ -9,16 +9,25 @@ import {
   BalanceCard,
   BudgetSummaryCard,
   CategoryCard,
-  QuickAddCard,
   RecentTransactionItem,
+  RemindersList,
 } from '@/components/dashboard';
+import type { ReminderItem, ReminderType } from '@/components/dashboard';
 import { useAccounts } from '@/hooks/use-accounts';
 import { useBudgets } from '@/hooks/use-budgets';
 import { useCategories } from '@/hooks/use-categories';
+import { useDebts } from '@/hooks/use-debts';
+import { useRecurring } from '@/hooks/use-recurring';
 import { useTransactions } from '@/hooks/use-transactions';
+import { calculateNextDate } from '@/modules/recurring/recurring.model';
+import { createRecurringService } from '@/modules/recurring/recurring.service';
+import { createTransactionService } from '@/modules/transaction/transaction.service';
+import { createDebtService } from '@/modules/debt/debt.service';
 import { useAccountStore } from '@/state/account.store';
 import { useBudgetStore } from '@/state/budget.store';
 import { useCategoryStore } from '@/state/category.store';
+import { useDebtStore } from '@/state/debt.store';
+import { useRecurringStore } from '@/state/recurring.store';
 import { useTransactionStore } from '@/state/transaction.store';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -34,11 +43,15 @@ export default function HomeScreen() {
   const { fetch: fetchCategories } = useCategories();
   const { fetch: fetchAccounts } = useAccounts();
   const { fetchStatuses: fetchBudgetStatuses } = useBudgets();
+  const { fetch: fetchRecurring } = useRecurring();
+  const { fetchUnsettled: fetchDebts } = useDebts();
 
   const accounts = useAccountStore((state) => state.accounts);
   const transactions = useTransactionStore((state) => state.transactions);
   const categories = useCategoryStore((state) => state.categories);
   const budgetStatuses = useBudgetStore((state) => state.statuses);
+  const recurringRules = useRecurringStore((state) => state.rules);
+  const debts = useDebtStore((state) => state.debts);
 
   const totalBalance = useMemo(() => {
     return accounts.reduce((sum, account) => sum + account.balance, 0);
@@ -126,6 +139,73 @@ export default function HomeScreen() {
       });
   }, [transactions, categories]);
 
+  // Ghost allocated: unpaid payables you owe + next recurring expense amounts
+  const committed = useMemo(() => {
+    const payableTotal = debts
+      .filter((d) => !d.isSettled && d.direction === 'payable')
+      .reduce((sum, d) => sum + d.amount, 0);
+
+    const recurringTotal = recurringRules
+      .filter((r) => r.isActive && r.type === 'expense')
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    return payableTotal + recurringTotal;
+  }, [debts, recurringRules]);
+
+  // Build reminder items from recurring rules + unsettled debts
+  const reminderItems = useMemo<ReminderItem[]>(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const items: ReminderItem[] = [];
+
+    // Recurring reminders
+    for (const rule of recurringRules) {
+      if (!rule.isActive) continue;
+      const isOverdue = rule.nextDate <= today;
+      const category = categories.find((c) => c.id === rule.categoryId);
+
+      items.push({
+        id: rule.id,
+        type: 'recurring',
+        title: rule.name,
+        subtitle: `${rule.frequency} · ${category?.name || 'Unknown'}`,
+        amount: rule.amount,
+        icon: (category?.icon || 'repeat') as IconName,
+        iconColor: category?.color || '#A8E6CF',
+        dueLabel: isOverdue ? 'Due' : rule.nextDate,
+        isOverdue,
+        direction: rule.type === 'expense' ? 'payable' : 'receivable',
+      });
+    }
+
+    // Debt reminders
+    for (const debt of debts) {
+      if (debt.isSettled) continue;
+      const isOverdue = debt.dueDate ? debt.dueDate <= today : false;
+
+      items.push({
+        id: debt.id,
+        type: 'debt',
+        title: debt.personName,
+        subtitle: debt.description || (debt.direction === 'receivable' ? 'Owes you' : 'You owe'),
+        amount: debt.amount,
+        icon: debt.direction === 'receivable' ? 'arrow-down' : 'arrow-up',
+        iconColor: debt.direction === 'receivable' ? '#05DF72' : '#FF6B6B',
+        dueLabel: debt.dueDate
+          ? (isOverdue ? 'Overdue' : debt.dueDate)
+          : 'No due date',
+        isOverdue,
+        direction: debt.direction,
+      });
+    }
+
+    // Sort: overdue first, then by date
+    return items.sort((a, b) => {
+      if (a.isOverdue && !b.isOverdue) return -1;
+      if (!a.isOverdue && b.isOverdue) return 1;
+      return 0;
+    });
+  }, [recurringRules, debts, categories]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -142,8 +222,10 @@ export default function HomeScreen() {
       fetchTransactions({ limit: 50 }),
       fetchCategories(),
       fetchBudgetStatuses(),
+      fetchRecurring(),
+      fetchDebts(),
     ]);
-  }, [fetchAccounts, fetchTransactions, fetchCategories, fetchBudgetStatuses]);
+  }, [fetchAccounts, fetchTransactions, fetchCategories, fetchBudgetStatuses, fetchRecurring, fetchDebts]);
 
   useFocusEffect(
     useCallback(() => {
@@ -156,6 +238,55 @@ export default function HomeScreen() {
     await loadData();
     setRefreshing(false);
   }, [loadData]);
+
+  const handleReminderConfirm = useCallback(async (id: string, type: ReminderType) => {
+    if (type === 'recurring') {
+      const rule = recurringRules.find((r) => r.id === id);
+      if (!rule) return;
+
+      // Create the transaction
+      const transactionService = createTransactionService();
+      await transactionService.add({
+        type: rule.type,
+        amount: rule.amount,
+        description: rule.description ?? rule.name,
+        categoryId: rule.categoryId,
+        accountId: rule.accountId,
+        date: new Date().toISOString(),
+        recurringRuleId: rule.id,
+      });
+
+      // Advance nextDate
+      const recurringService = createRecurringService();
+      const nextDate = calculateNextDate(rule.nextDate, rule.frequency);
+
+      // Check if end date exceeded
+      if (rule.endDate && nextDate > rule.endDate) {
+        await recurringService.pause(rule.id);
+      } else {
+        await recurringService.edit(rule.id, { nextDate });
+      }
+
+      await loadData();
+    } else if (type === 'debt') {
+      const debtService = createDebtService();
+      await debtService.settle(id);
+      await loadData();
+    }
+  }, [recurringRules, loadData]);
+
+  const handleReminderDismiss = useCallback(async (id: string, type: ReminderType) => {
+    if (type === 'recurring') {
+      // Skip: advance nextDate without creating transaction
+      const rule = recurringRules.find((r) => r.id === id);
+      if (!rule) return;
+
+      const recurringService = createRecurringService();
+      await recurringService.skipNext(id);
+      await loadData();
+    }
+    // For debts, swiping left does nothing (they can delete from add screen or we just ignore)
+  }, [recurringRules, loadData]);
 
   return (
     <ScrollView
@@ -180,12 +311,6 @@ export default function HomeScreen() {
             Dashboard
           </Text>
         </View>
-        <Pressable
-          className="w-10 h-10 rounded-full bg-surface dark:bg-surface-dark border border-border/50 dark:border-white/5 items-center justify-center active:opacity-70"
-          onPress={() => router.push('/settings')}
-        >
-          <Ionicons name="notifications-outline" size={20} color="#71717A" />
-        </Pressable>
       </View>
 
       {/* Balance Card */}
@@ -193,13 +318,28 @@ export default function HomeScreen() {
         totalBalance={totalBalance}
         income={monthlyIncome}
         expense={monthlyExpense}
+        committed={committed}
         sparklineData={sparklineData}
       />
 
-      {/* Quick Add Card */}
-      <View className="mt-4">
-        <QuickAddCard />
-      </View>
+      {/* Reminders Section */}
+      {reminderItems.length > 0 && (
+        <View className="mt-4">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-text-primary dark:text-text-primary-dark text-lg font-bold tracking-tight">
+              Reminders
+            </Text>
+            <Text className="text-text-muted dark:text-text-muted-dark text-xs">
+              Swipe → Paid · ← Skip
+            </Text>
+          </View>
+          <RemindersList
+            items={reminderItems}
+            onConfirm={handleReminderConfirm}
+            onDismiss={handleReminderDismiss}
+          />
+        </View>
+      )}
 
       {/* Top Categories */}
       <View className="mt-6">

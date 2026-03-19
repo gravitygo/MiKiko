@@ -47,6 +47,28 @@ export async function initializeDatabase(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_payables_is_paid ON payables(is_paid);
   `);
 
+  // Migration: create debts table (replaces payables conceptually)
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS debts (
+      id TEXT PRIMARY KEY NOT NULL,
+      person_name TEXT NOT NULL,
+      direction TEXT NOT NULL CHECK (direction IN ('payable', 'receivable')),
+      amount REAL NOT NULL,
+      description TEXT,
+      due_date TEXT,
+      is_settled INTEGER DEFAULT 0,
+      category_id TEXT,
+      account_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (category_id) REFERENCES categories(id),
+      FOREIGN KEY (account_id) REFERENCES accounts(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_debts_direction ON debts(direction);
+    CREATE INDEX IF NOT EXISTS idx_debts_is_settled ON debts(is_settled);
+    CREATE INDEX IF NOT EXISTS idx_debts_due_date ON debts(due_date);
+  `);
+
   await seedDefaultData(database);
 }
 
@@ -57,6 +79,7 @@ export async function resetAllData(): Promise<void> {
     DELETE FROM recurring_rules;
     DELETE FROM budgets;
     DELETE FROM payables;
+    DELETE FROM debts;
     DELETE FROM accounts WHERE is_default = 0;
     DELETE FROM categories WHERE is_default = 0;
     UPDATE accounts SET balance = 0;
