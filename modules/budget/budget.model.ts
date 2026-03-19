@@ -1,11 +1,11 @@
-import { v4 as uuid } from 'uuid';
+import * as Crypto from 'expo-crypto';
 import type { Budget, BudgetAlertLevel, BudgetStatus, CreateBudgetInput } from './budget.types';
 
 export function createBudget(input: CreateBudgetInput): Budget {
   const now = new Date().toISOString();
 
   return {
-    id: uuid(),
+    id: Crypto.randomUUID(),
     name: input.name,
     type: input.type,
     amount: input.amount,

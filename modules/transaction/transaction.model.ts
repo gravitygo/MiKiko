@@ -1,11 +1,11 @@
-import { v4 as uuid } from 'uuid';
-import type { Transaction, TransactionType, CreateTransactionInput } from './transaction.types';
+import * as Crypto from 'expo-crypto';
+import type { CreateTransactionInput, Transaction } from './transaction.types';
 
 export function createTransaction(input: CreateTransactionInput): Transaction {
   const now = new Date().toISOString();
 
   return {
-    id: uuid(),
+    id: Crypto.randomUUID(),
     type: input.type,
     amount: input.amount,
     description: input.description ?? null,
@@ -31,7 +31,7 @@ export function duplicateTransaction(transaction: Transaction): Transaction {
 
   return {
     ...transaction,
-    id: uuid(),
+    id: Crypto.randomUUID(),
     recurringRuleId: null,
     createdAt: now,
     updatedAt: now,

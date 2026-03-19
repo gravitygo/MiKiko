@@ -1,11 +1,11 @@
-import { v4 as uuid } from 'uuid';
-import type { RecurringRule, RecurringFrequency, CreateRecurringRuleInput } from './recurring.types';
+import * as Crypto from 'expo-crypto';
+import type { CreateRecurringRuleInput, RecurringFrequency, RecurringRule } from './recurring.types';
 
 export function createRecurringRule(input: CreateRecurringRuleInput): RecurringRule {
   const now = new Date().toISOString();
 
   return {
-    id: uuid(),
+    id: Crypto.randomUUID(),
     name: input.name,
     type: input.type,
     amount: input.amount,

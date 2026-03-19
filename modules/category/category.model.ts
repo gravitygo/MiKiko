@@ -1,11 +1,11 @@
-import { v4 as uuid } from 'uuid';
-import type { Category, CategoryType, CreateCategoryInput } from './category.types';
+import * as Crypto from 'expo-crypto';
+import type { Category, CreateCategoryInput } from './category.types';
 
 export function createCategory(input: CreateCategoryInput): Category {
   const now = new Date().toISOString();
 
   return {
-    id: uuid(),
+    id: Crypto.randomUUID(),
     name: input.name,
     icon: input.icon,
     color: input.color,

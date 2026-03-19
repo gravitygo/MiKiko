@@ -1,11 +1,11 @@
-import { v4 as uuid } from 'uuid';
+import * as Crypto from 'expo-crypto';
 import type { Account, CreateAccountInput } from './account.types';
 
 export function createAccount(input: CreateAccountInput): Account {
   const now = new Date().toISOString();
 
   return {
-    id: uuid(),
+    id: Crypto.randomUUID(),
     name: input.name,
     type: input.type,
     balance: input.balance ?? 0,
