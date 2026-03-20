@@ -18,7 +18,7 @@ type SpeechModule = {
       continuous: boolean;
     }) => void;
     stop: () => void;
-    isRecognitionAvailable: () => Promise<boolean>;
+    isRecognitionAvailable: () => boolean | Promise<boolean>;
   };
   useSpeechRecognitionEvent: (
     event: string,
@@ -60,9 +60,17 @@ export default function VoiceScreen() {
       setAvailable(false);
       return;
     }
-    speechModule.ExpoSpeechRecognitionModule.isRecognitionAvailable()
-      .then(setAvailable)
-      .catch(() => setAvailable(false));
+    try {
+      const result = speechModule.ExpoSpeechRecognitionModule.isRecognitionAvailable();
+      // Handle both sync (boolean) and async (Promise<boolean>) returns
+      if (result && typeof (result as any).then === 'function') {
+        (result as Promise<boolean>).then(setAvailable).catch(() => setAvailable(false));
+      } else {
+        setAvailable(Boolean(result));
+      }
+    } catch {
+      setAvailable(false);
+    }
   }, []);
 
   // Register speech events

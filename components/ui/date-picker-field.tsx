@@ -22,7 +22,10 @@ export function DatePickerField({ value, onChange, label, placeholder, minimumDa
   const handleChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === 'android') setShow(false);
     if (selectedDate) {
-      onChange(selectedDate.toISOString().split('T')[0]);
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      onChange(`${year}-${month}-${day}`);
     }
   };
 

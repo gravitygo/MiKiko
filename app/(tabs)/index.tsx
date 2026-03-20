@@ -33,6 +33,14 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const BOTTOM_NAV_HEIGHT = 130;
 const UNDO_EXPIRY_MS = 30_000;
 
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+function formatFrequency(frequency: string, customDays?: number[] | null): string {
+  if (frequency === 'custom' && customDays?.length) {
+    return customDays.map((d) => DAY_NAMES[d]).join(', ');
+  }
+  return frequency;
+}
+
 interface UndoAction {
   action: 'confirm' | 'skip';
   previousNextDate?: string;
@@ -184,7 +192,7 @@ export default function HomeScreen() {
         id: rule.id,
         type: 'recurring',
         title: rule.name,
-        subtitle: `${rule.frequency} · ${category?.name || 'Unknown'}`,
+        subtitle: `${formatFrequency(rule.frequency, rule.customDays)} · ${category?.name || 'Unknown'}`,
         amount: rule.amount,
         icon: (category?.icon || 'repeat') as IconName,
         iconColor: category?.color || '#A8E6CF',
@@ -282,7 +290,7 @@ export default function HomeScreen() {
 
       // Advance nextDate
       const recurringService = createRecurringService();
-      const nextDate = calculateNextDate(rule.nextDate, rule.frequency);
+      const nextDate = calculateNextDate(rule.nextDate, rule.frequency, rule.customDays);
 
       if (rule.endDate && nextDate > rule.endDate) {
         await recurringService.pause(rule.id);

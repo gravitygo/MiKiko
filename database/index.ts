@@ -26,6 +26,13 @@ export async function initializeDatabase(): Promise<void> {
     // Column already exists
   }
 
+  // Migration: add custom_days column if missing
+  try {
+    await database.execAsync('ALTER TABLE recurring_rules ADD COLUMN custom_days TEXT');
+  } catch {
+    // Column already exists
+  }
+
   // Migration: create payables table
   await database.execAsync(`
     CREATE TABLE IF NOT EXISTS payables (

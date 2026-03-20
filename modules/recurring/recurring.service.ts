@@ -1,10 +1,10 @@
-import { createRecurringRule, calculateNextDate } from './recurring.model';
-import { createRecurringRepository } from './recurring.repository';
 import { createTransactionService } from '@/modules/transaction/transaction.service';
+import { calculateNextDate, createRecurringRule } from './recurring.model';
+import { createRecurringRepository } from './recurring.repository';
 import type {
-  RecurringRule,
-  CreateRecurringRuleInput,
-  UpdateRecurringRuleInput,
+    CreateRecurringRuleInput,
+    RecurringRule,
+    UpdateRecurringRuleInput,
 } from './recurring.types';
 
 export function createRecurringService() {
@@ -29,6 +29,7 @@ export function createRecurringService() {
         categoryId: input.categoryId ?? existing.categoryId,
         accountId: input.accountId ?? existing.accountId,
         frequency: input.frequency ?? existing.frequency,
+        customDays: input.customDays !== undefined ? input.customDays : existing.customDays,
         nextDate: input.nextDate ?? existing.nextDate,
         updatedAt: new Date().toISOString(),
       };
@@ -81,7 +82,7 @@ export function createRecurringService() {
       const existing = await repository.findById(id);
       if (!existing) return null;
 
-      const nextDate = calculateNextDate(existing.nextDate, existing.frequency);
+      const nextDate = calculateNextDate(existing.nextDate, existing.frequency, existing.customDays);
       await repository.updateNextDate(id, nextDate);
 
       return { ...existing, nextDate, updatedAt: new Date().toISOString() };
@@ -105,7 +106,7 @@ export function createRecurringService() {
           recurringRuleId: rule.id,
         });
 
-        const nextDate = calculateNextDate(rule.nextDate, rule.frequency);
+        const nextDate = calculateNextDate(rule.nextDate, rule.frequency, rule.customDays);
         await repository.updateNextDate(rule.id, nextDate);
 
         processed++;

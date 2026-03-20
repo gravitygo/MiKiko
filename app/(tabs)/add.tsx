@@ -2,15 +2,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +26,7 @@ import { useTransactions } from '@/hooks/use-transactions';
 import type { Account } from '@/modules/account/account.types';
 import type { Category } from '@/modules/category/category.types';
 import type { DebtDirection } from '@/modules/debt/debt.types';
-import type { RecurringFrequency } from '@/modules/recurring/recurring.types';
+import type { RecurringFrequency, WeekDay } from '@/modules/recurring/recurring.types';
 import type { TransactionType } from '@/modules/transaction/transaction.types';
 import { useAccountStore } from '@/state/account.store';
 import { useCategoryStore } from '@/state/category.store';
@@ -36,8 +36,21 @@ type TabType = 'expense' | 'income' | 'owe';
 const FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Biweekly' },
   { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
   { value: 'yearly', label: 'Yearly' },
+  { value: 'custom', label: 'Custom Days' },
+];
+
+const WEEKDAYS: { value: WeekDay; label: string; short: string }[] = [
+  { value: 0, label: 'Sunday', short: 'S' },
+  { value: 1, label: 'Monday', short: 'M' },
+  { value: 2, label: 'Tuesday', short: 'T' },
+  { value: 3, label: 'Wednesday', short: 'W' },
+  { value: 4, label: 'Thursday', short: 'T' },
+  { value: 5, label: 'Friday', short: 'F' },
+  { value: 6, label: 'Saturday', short: 'S' },
 ];
 
 interface CategoryItemProps {
@@ -129,6 +142,7 @@ export default function AddTransactionScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<RecurringFrequency>('monthly');
+  const [customDays, setCustomDays] = useState<WeekDay[]>([]);
   const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState('');
 
@@ -229,6 +243,7 @@ export default function AddTransactionScreen() {
         categoryId: selectedCategoryId,
         accountId: selectedAccountId,
         frequency,
+        customDays: frequency === 'custom' ? customDays : undefined,
         nextDate,
         endDate: endDate || undefined,
       });
@@ -240,10 +255,11 @@ export default function AddTransactionScreen() {
       setAmount('');
       setDescription('');
       setIsRecurring(false);
+      setCustomDays([]);
       setEndDate('');
       router.back();
     }
-  }, [amount, description, selectedCategoryId, selectedAccountId, activeTab, addTransaction, isRecurring, addRecurringRule, frequency, nextDate, endDate, personName, debtDirection, debtDueDate, addDebt]);
+  }, [amount, description, selectedCategoryId, selectedAccountId, activeTab, addTransaction, isRecurring, addRecurringRule, frequency, customDays, nextDate, endDate, personName, debtDirection, debtDueDate, addDebt]);
 
   const canSubmit = useMemo(() => {
     const parsedAmount = parseFloat(amount);
@@ -512,6 +528,33 @@ export default function AddTransactionScreen() {
                     </Pressable>
                   ))}
                 </View>
+
+                {/* Custom Weekday Picker */}
+                {frequency === 'custom' && (
+                  <View className="mb-3">
+                    <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
+                      Select Days
+                    </Text>
+                    <View className="flex-row justify-between">
+                      {WEEKDAYS.map((day) => {
+                        const selected = customDays.includes(day.value);
+                        return (
+                          <Pressable
+                            key={day.value}
+                            onPress={() => setCustomDays((prev) =>
+                              selected ? prev.filter((d) => d !== day.value) : [...prev, day.value].sort()
+                            )}
+                            className="w-10 h-10 rounded-full items-center justify-center"
+                            style={{ backgroundColor: selected ? colors.tint : colors.surfaceHover }}
+                          >
+                            <Text className="text-sm font-semibold" style={{ color: selected ? '#FFFFFF' : colors.text }}>{day.short}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+
                 <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
                   Next Payment Date
                 </Text>
