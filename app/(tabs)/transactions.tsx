@@ -334,7 +334,7 @@ export default function TransactionsScreen() {
     );
   }
 
-  if (transactions.length === 0) {
+  if (transactions.length === 0 && !hasActiveFilters) {
     return (
       <View
         className="flex-1 bg-background dark:bg-background-dark items-center justify-center px-8"
@@ -433,8 +433,24 @@ export default function TransactionsScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} />
         }
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={listData.length === 0 ? { flexGrow: 1, paddingBottom: 100 } : { paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          hasActiveFilters ? (
+            <View className="flex-1 items-center justify-center px-8">
+              <Ionicons name="search-outline" size={40} color={colors.textMuted} />
+              <Text className="text-text-primary dark:text-text-primary-dark text-lg font-semibold mt-3 mb-1">
+                No results
+              </Text>
+              <Text className="text-text-muted dark:text-text-muted-dark text-center mb-4">
+                No transactions match your current filters
+              </Text>
+              <Pressable onPress={clearFilters} className="bg-primary px-5 py-2.5 rounded-full">
+                <Text className="text-white font-medium text-sm">Clear Filters</Text>
+              </Pressable>
+            </View>
+          ) : undefined
+        }
       />
 
       {/* Filter Modal */}
