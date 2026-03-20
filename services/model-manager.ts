@@ -51,47 +51,43 @@ export async function downloadModel(
   ensureModelsDir();
   const url = MODEL_URLS[type];
   const file = getModelFile(type);
+  const expectedSize = MODEL_SIZES[type];
 
-  return new Promise<string>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'arraybuffer';
+  // Delete partial download if exists
+  if (file.exists) {
+    file.delete();
+  }
 
-    xhr.onprogress = (event) => {
-      if (onProgress && event.total > 0) {
-        onProgress(Math.round((event.loaded / event.total) * 100));
-      } else if (onProgress && event.loaded > 0) {
-        const expected = MODEL_SIZES[type];
-        onProgress(Math.round((event.loaded / expected) * 100));
-      }
-    };
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = new Uint8Array(xhr.response as ArrayBuffer);
-          file.create({ intermediates: true });
-          file.write(data);
-          onProgress?.(100);
-          resolve(file.uri);
-        } catch (e) {
-          reject(new Error(`Failed to write ${type} model: ${e}`));
+  // Poll file size for progress while downloading
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
+  if (onProgress) {
+    pollInterval = setInterval(() => {
+      try {
+        if (file.exists && file.size > 0) {
+          const pct = Math.min(99, Math.round((file.size / expectedSize) * 100));
+          onProgress(pct);
         }
-      } else {
-        reject(new Error(`Failed to download ${type} model: HTTP ${xhr.status}`));
+      } catch {
+        // File may not exist yet, ignore
       }
-    };
+    }, 500);
+  }
 
-    xhr.onerror = () => {
-      reject(new Error(`Network error downloading ${type} model`));
-    };
-
-    xhr.ontimeout = () => {
-      reject(new Error(`Timeout downloading ${type} model`));
-    };
-
-    xhr.send();
-  });
+  try {
+    await File.downloadFileAsync(url, file, { idempotent: true });
+    onProgress?.(100);
+    return file.uri;
+  } catch (e) {
+    // Clean up partial file
+    if (file.exists) {
+      file.delete();
+    }
+    throw new Error(`Failed to download ${type} model: ${e}`);
+  } finally {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+    }
+  }
 }
 
 export function deleteModel(type: ModelType): void {
