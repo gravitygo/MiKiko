@@ -1,52 +1,38 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as SpeechRecognition from "expo-speech-recognition";
+import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useVoice } from '@/hooks/use-voice';
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useVoice } from "@/hooks/use-voice";
 
-type SpeechModule = {
-  ExpoSpeechRecognitionModule: {
-    start: (options: {
-      lang: string;
-      interimResults: boolean;
-      requiresOnDeviceRecognition: boolean;
-      continuous: boolean;
-    }) => void;
-    stop: () => void;
-    isRecognitionAvailable: () => boolean | Promise<boolean>;
-  };
-  useSpeechRecognitionEvent: (
-    event: string,
-    callback: (ev: { results?: { transcript: string }[]; error?: string }) => void
-  ) => void;
-};
-
-let speechModule: SpeechModule | null = null;
-try {
-  speechModule = require('expo-speech-recognition');
-} catch {
-  // Module not installed — voice screen will show setup instructions
-}
+const speechModule = SpeechRecognition ?? null;
 
 const LANGUAGES = [
-  { code: 'en-US', label: 'English' },
-  { code: 'fil-PH', label: 'Filipino' },
+  { code: "en-US", label: "English" },
+  { code: "fil-PH", label: "Filipino" },
 ] as const;
 
 export default function VoiceScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const colors = Colors[colorScheme ?? "light"];
   const insets = useSafeAreaInsets();
   const { addLog } = useVoice();
 
   const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [selectedLang, setSelectedLang] = useState<string>('en-US');
+  const [transcript, setTranscript] = useState("");
+  const [selectedLang, setSelectedLang] = useState<string>("en-US");
   const [startTime, setStartTime] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -56,18 +42,21 @@ export default function VoiceScreen() {
 
   // Check availability on mount
   useEffect(() => {
-    if (!speechModule) {
-      setAvailable(false);
-      return;
-    }
     try {
-      const result = speechModule.ExpoSpeechRecognitionModule.isRecognitionAvailable();
-      // Handle both sync (boolean) and async (Promise<boolean>) returns
-      if (result && typeof (result as any).then === 'function') {
-        (result as Promise<boolean>).then(setAvailable).catch(() => setAvailable(false));
-      } else {
-        setAvailable(Boolean(result));
+      const result =
+        SpeechRecognition.ExpoSpeechRecognitionModule.isRecognitionAvailable();
+
+      if (typeof result === "boolean") {
+        setAvailable(result);
+        return;
       }
+
+      if (result && typeof (result as Promise<boolean>).then === "function") {
+        result.then(setAvailable).catch(() => setAvailable(false));
+        return;
+      }
+
+      setAvailable(false);
     } catch {
       setAvailable(false);
     }
@@ -75,18 +64,18 @@ export default function VoiceScreen() {
 
   // Register speech events
   if (speechModule) {
-    speechModule.useSpeechRecognitionEvent('result', (ev) => {
+    speechModule.useSpeechRecognitionEvent("result", (ev) => {
       const text = ev.results?.[0]?.transcript;
       if (text) setTranscript(text);
     });
 
-    speechModule.useSpeechRecognitionEvent('end', () => {
+    speechModule.useSpeechRecognitionEvent("end", () => {
       setIsListening(false);
       stopPulse();
     });
 
-    speechModule.useSpeechRecognitionEvent('error', (ev) => {
-      console.warn('Speech recognition error:', ev.error);
+    speechModule.useSpeechRecognitionEvent("error", (ev) => {
+      console.warn("Speech recognition error:", ev.error);
       setIsListening(false);
       stopPulse();
     });
@@ -107,7 +96,7 @@ export default function VoiceScreen() {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulseLoop.current.start();
   }, [pulseAnim]);
@@ -128,7 +117,7 @@ export default function VoiceScreen() {
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setTranscript('');
+    setTranscript("");
     setSaved(false);
     setStartTime(Date.now());
     setIsListening(true);
@@ -154,7 +143,7 @@ export default function VoiceScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSaved(true);
-    setTranscript('');
+    setTranscript("");
   }, [transcript, selectedLang, startTime, addLog]);
 
   const handleClose = useCallback(() => {
@@ -178,11 +167,15 @@ export default function VoiceScreen() {
           Voice Recognition Unavailable
         </Text>
         <Text className="text-text-muted dark:text-text-muted-dark text-center mb-6 leading-5">
-          Install expo-speech-recognition and rebuild with a development client to enable on-device voice recognition.
-          {'\n\n'}
+          Install expo-speech-recognition and rebuild with a development client
+          to enable on-device voice recognition.
+          {"\n\n"}
           Run: npx expo install expo-speech-recognition
         </Text>
-        <Pressable onPress={handleClose} className="bg-primary px-6 py-3 rounded-2xl">
+        <Pressable
+          onPress={handleClose}
+          className="bg-primary px-6 py-3 rounded-2xl"
+        >
           <Text className="text-white font-semibold">Go Back</Text>
         </Pressable>
       </View>
@@ -190,10 +183,16 @@ export default function VoiceScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark" style={{ paddingTop: insets.top }}>
+    <View
+      className="flex-1 bg-background dark:bg-background-dark"
+      style={{ paddingTop: insets.top }}
+    >
       {/* Header */}
       <View className="flex-row items-center justify-between px-6 py-4">
-        <Pressable onPress={handleClose} className="w-10 h-10 rounded-full bg-surface dark:bg-surface-dark items-center justify-center">
+        <Pressable
+          onPress={handleClose}
+          className="w-10 h-10 rounded-full bg-surface dark:bg-surface-dark items-center justify-center"
+        >
           <Ionicons name="close" size={22} color={colors.textSecondary} />
         </Pressable>
         <Text className="text-text-primary dark:text-text-primary-dark text-lg font-bold">
@@ -209,14 +208,18 @@ export default function VoiceScreen() {
             key={lang.code}
             onPress={() => !isListening && setSelectedLang(lang.code)}
             className={`px-5 py-2.5 rounded-full ${
-              selectedLang === lang.code ? 'bg-primary' : 'bg-surface dark:bg-surface-dark'
+              selectedLang === lang.code
+                ? "bg-primary"
+                : "bg-surface dark:bg-surface-dark"
             }`}
           >
-            <Text className={`text-sm font-medium ${
-              selectedLang === lang.code
-                ? 'text-white'
-                : 'text-text-primary dark:text-text-primary-dark'
-            }`}>
+            <Text
+              className={`text-sm font-medium ${
+                selectedLang === lang.code
+                  ? "text-white"
+                  : "text-text-primary dark:text-text-primary-dark"
+              }`}
+            >
               {lang.label}
             </Text>
           </Pressable>
@@ -234,15 +237,20 @@ export default function VoiceScreen() {
           </Text>
         ) : (
           <Text className="text-text-muted dark:text-text-muted-dark text-base text-center mt-8">
-            {isListening ? 'Listening...' : 'Tap the mic to start speaking'}
+            {isListening ? "Listening..." : "Tap the mic to start speaking"}
           </Text>
         )}
       </ScrollView>
 
       {/* Controls */}
-      <View className="items-center pb-8" style={{ paddingBottom: insets.bottom + 16 }}>
+      <View
+        className="items-center pb-8"
+        style={{ paddingBottom: insets.bottom + 16 }}
+      >
         {saved && (
-          <Text className="text-secondary text-sm font-medium mb-3">Saved to voice log</Text>
+          <Text className="text-secondary text-sm font-medium mb-3">
+            Saved to voice log
+          </Text>
         )}
 
         <View className="flex-row items-center gap-6">
@@ -257,14 +265,16 @@ export default function VoiceScreen() {
           )}
 
           {/* Mic Button */}
-          <Animated.View style={{ transform: [{ scale: isListening ? pulseAnim : 1 }] }}>
+          <Animated.View
+            style={{ transform: [{ scale: isListening ? pulseAnim : 1 }] }}
+          >
             <Pressable
               onPress={handleToggleListening}
               className={`w-20 h-20 rounded-full items-center justify-center ${
-                isListening ? 'bg-expense' : 'bg-primary'
+                isListening ? "bg-expense" : "bg-primary"
               }`}
               style={{
-                shadowColor: isListening ? '#FF6B6B' : '#0084D1',
+                shadowColor: isListening ? "#FF6B6B" : "#0084D1",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.4,
                 shadowRadius: 12,
@@ -272,7 +282,7 @@ export default function VoiceScreen() {
               }}
             >
               <Ionicons
-                name={isListening ? 'stop' : 'mic'}
+                name={isListening ? "stop" : "mic"}
                 size={36}
                 color="#FFFFFF"
               />
@@ -282,7 +292,10 @@ export default function VoiceScreen() {
           {/* Clear Button */}
           {transcript.trim().length > 0 && !isListening && (
             <Pressable
-              onPress={() => { setTranscript(''); setSaved(false); }}
+              onPress={() => {
+                setTranscript("");
+                setSaved(false);
+              }}
               className="w-14 h-14 rounded-full bg-expense/20 items-center justify-center"
             >
               <Ionicons name="trash" size={24} color="#FF6B6B" />
