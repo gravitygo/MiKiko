@@ -1,56 +1,59 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    Switch,
-    Text,
-    TextInput,
-    View,
-} from 'react-native';
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { DatePickerField } from '@/components/ui/date-picker-field';
-import { Colors } from '@/constants/theme';
-import { useAccounts } from '@/hooks/use-accounts';
-import { useCategories } from '@/hooks/use-categories';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useDebts } from '@/hooks/use-debts';
-import { useRecurring } from '@/hooks/use-recurring';
-import { useTransactions } from '@/hooks/use-transactions';
-import type { Account } from '@/modules/account/account.types';
-import type { Category } from '@/modules/category/category.types';
-import type { DebtDirection } from '@/modules/debt/debt.types';
-import type { RecurringFrequency, WeekDay } from '@/modules/recurring/recurring.types';
-import type { TransactionType } from '@/modules/transaction/transaction.types';
-import { useAccountStore } from '@/state/account.store';
-import { useCategoryStore } from '@/state/category.store';
+import { DatePickerField } from "@/components/ui/date-picker-field";
+import { Colors } from "@/constants/theme";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useCategories } from "@/hooks/use-categories";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useDebts } from "@/hooks/use-debts";
+import { useRecurring } from "@/hooks/use-recurring";
+import { useTransactions } from "@/hooks/use-transactions";
+import type { Account } from "@/modules/account/account.types";
+import type { Category } from "@/modules/category/category.types";
+import type { DebtDirection } from "@/modules/debt/debt.types";
+import type {
+  RecurringFrequency,
+  WeekDay,
+} from "@/modules/recurring/recurring.types";
+import type { TransactionType } from "@/modules/transaction/transaction.types";
+import { useAccountStore } from "@/state/account.store";
+import { useCategoryStore } from "@/state/category.store";
 
-type TabType = 'expense' | 'income' | 'owe';
+type TabType = "expense" | "income" | "owe";
 
 const FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'biweekly', label: 'Biweekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'yearly', label: 'Yearly' },
-  { value: 'custom', label: 'Custom Days' },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "biweekly", label: "Biweekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "yearly", label: "Yearly" },
+  { value: "custom", label: "Custom Days" },
 ];
 
 const WEEKDAYS: { value: WeekDay; label: string; short: string }[] = [
-  { value: 0, label: 'Sunday', short: 'S' },
-  { value: 1, label: 'Monday', short: 'M' },
-  { value: 2, label: 'Tuesday', short: 'T' },
-  { value: 3, label: 'Wednesday', short: 'W' },
-  { value: 4, label: 'Thursday', short: 'T' },
-  { value: 5, label: 'Friday', short: 'F' },
-  { value: 6, label: 'Saturday', short: 'S' },
+  { value: 0, label: "Sunday", short: "S" },
+  { value: 1, label: "Monday", short: "M" },
+  { value: 2, label: "Tuesday", short: "T" },
+  { value: 3, label: "Wednesday", short: "W" },
+  { value: 4, label: "Thursday", short: "T" },
+  { value: 5, label: "Friday", short: "F" },
+  { value: 6, label: "Saturday", short: "S" },
 ];
 
 interface CategoryItemProps {
@@ -61,29 +64,35 @@ interface CategoryItemProps {
 
 function CategoryItem({ category, selected, onPress }: CategoryItemProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const colors = Colors[colorScheme ?? "light"];
 
   return (
     <Pressable
       onPress={onPress}
       className={`items-center justify-center p-3 rounded-bento-sm mr-2 mb-2 ${
-        selected ? 'bg-primary' : 'bg-surface dark:bg-surface-dark'
+        selected ? "bg-primary" : "bg-surface dark:bg-surface-dark"
       }`}
       style={{ width: 80 }}
     >
       <View
         className="w-10 h-10 rounded-full items-center justify-center mb-1"
-        style={{ backgroundColor: selected ? 'rgba(255,255,255,0.2)' : category.color + '20' }}
+        style={{
+          backgroundColor: selected
+            ? "rgba(255,255,255,0.2)"
+            : category.color + "20",
+        }}
       >
         <Ionicons
           name={category.icon as any}
           size={20}
-          color={selected ? '#FFFFFF' : category.color}
+          color={selected ? "#FFFFFF" : category.color}
         />
       </View>
       <Text
         className={`text-xs text-center ${
-          selected ? 'text-white' : 'text-text-primary dark:text-text-primary-dark'
+          selected
+            ? "text-white"
+            : "text-text-primary dark:text-text-primary-dark"
         }`}
         numberOfLines={1}
       >
@@ -104,22 +113,28 @@ function AccountItem({ account, selected, onPress }: AccountItemProps) {
     <Pressable
       onPress={onPress}
       className={`flex-row items-center px-4 py-3 rounded-bento-sm mr-2 ${
-        selected ? 'bg-primary' : 'bg-surface dark:bg-surface-dark'
+        selected ? "bg-primary" : "bg-surface dark:bg-surface-dark"
       }`}
     >
       <View
         className="w-8 h-8 rounded-full items-center justify-center mr-2"
-        style={{ backgroundColor: selected ? 'rgba(255,255,255,0.2)' : account.color + '20' }}
+        style={{
+          backgroundColor: selected
+            ? "rgba(255,255,255,0.2)"
+            : account.color + "20",
+        }}
       >
         <Ionicons
           name={account.icon as any}
           size={16}
-          color={selected ? '#FFFFFF' : account.color}
+          color={selected ? "#FFFFFF" : account.color}
         />
       </View>
       <Text
         className={`font-medium ${
-          selected ? 'text-white' : 'text-text-primary dark:text-text-primary-dark'
+          selected
+            ? "text-white"
+            : "text-text-primary dark:text-text-primary-dark"
         }`}
       >
         {account.name}
@@ -130,26 +145,33 @@ function AccountItem({ account, selected, onPress }: AccountItemProps) {
 
 export default function AddTransactionScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const colors = Colors[colorScheme ?? "light"];
   const insets = useSafeAreaInsets();
 
-  const [activeTab, setActiveTab] = useState<TabType>('expense');
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("expense");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null,
+  );
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [frequency, setFrequency] = useState<RecurringFrequency>('monthly');
+  const [frequency, setFrequency] = useState<RecurringFrequency>("monthly");
   const [customDays, setCustomDays] = useState<WeekDay[]>([]);
-  const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState('');
+  const [nextDate, setNextDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [endDate, setEndDate] = useState("");
 
   // Owe-specific state
-  const [personName, setPersonName] = useState('');
-  const [debtDirection, setDebtDirection] = useState<DebtDirection>('receivable');
-  const [debtDueDate, setDebtDueDate] = useState('');
+  const [personName, setPersonName] = useState("");
+  const [debtDirection, setDebtDirection] =
+    useState<DebtDirection>("receivable");
+  const [debtDueDate, setDebtDueDate] = useState("");
 
   const categories = useCategoryStore((s) => s.categories);
   const accounts = useAccountStore((s) => s.accounts);
@@ -161,12 +183,17 @@ export default function AddTransactionScreen() {
   const { add: addDebt } = useDebts();
 
   const filteredCategories = useMemo(
-    () => categories.filter((c) => c.type === (activeTab === 'owe' ? 'expense' : activeTab)),
-    [categories, activeTab]
+    () =>
+      categories.filter(
+        (c) => c.type === (activeTab === "owe" ? "expense" : activeTab),
+      ),
+    [categories, activeTab],
   );
 
   useEffect(() => {
-    Promise.all([fetchCategories(), fetchAccounts()]).finally(() => setLoading(false));
+    Promise.all([fetchCategories(), fetchAccounts()]).finally(() =>
+      setLoading(false),
+    );
   }, [fetchCategories, fetchAccounts]);
 
   useEffect(() => {
@@ -187,8 +214,8 @@ export default function AddTransactionScreen() {
   }, [activeTab]);
 
   const handleAmountChange = useCallback((text: string) => {
-    const cleaned = text.replace(/[^0-9.]/g, '');
-    const parts = cleaned.split('.');
+    const cleaned = text.replace(/[^0-9.]/g, "");
+    const parts = cleaned.split(".");
     if (parts.length > 2) return;
     if (parts[1] && parts[1].length > 2) return;
     setAmount(cleaned);
@@ -201,8 +228,11 @@ export default function AddTransactionScreen() {
 
     setSubmitting(true);
 
-    if (activeTab === 'owe') {
-      if (!personName.trim()) { setSubmitting(false); return; }
+    if (activeTab === "owe") {
+      if (!personName.trim()) {
+        setSubmitting(false);
+        return;
+      }
 
       await addDebt({
         personName: personName.trim(),
@@ -215,15 +245,18 @@ export default function AddTransactionScreen() {
       });
 
       setSubmitting(false);
-      setAmount('');
-      setDescription('');
-      setPersonName('');
-      setDebtDueDate('');
+      setAmount("");
+      setDescription("");
+      setPersonName("");
+      setDebtDueDate("");
       router.back();
       return;
     }
 
-    if (!selectedCategoryId || !selectedAccountId) { setSubmitting(false); return; }
+    if (!selectedCategoryId || !selectedAccountId) {
+      setSubmitting(false);
+      return;
+    }
 
     const transaction = await addTransaction({
       type: activeTab as TransactionType,
@@ -243,7 +276,7 @@ export default function AddTransactionScreen() {
         categoryId: selectedCategoryId,
         accountId: selectedAccountId,
         frequency,
-        customDays: frequency === 'custom' ? customDays : undefined,
+        customDays: frequency === "custom" ? customDays : undefined,
         nextDate,
         endDate: endDate || undefined,
       });
@@ -252,24 +285,52 @@ export default function AddTransactionScreen() {
     setSubmitting(false);
 
     if (transaction) {
-      setAmount('');
-      setDescription('');
+      setAmount("");
+      setDescription("");
       setIsRecurring(false);
       setCustomDays([]);
-      setEndDate('');
+      setEndDate("");
       router.back();
     }
-  }, [amount, description, selectedCategoryId, selectedAccountId, activeTab, addTransaction, isRecurring, addRecurringRule, frequency, customDays, nextDate, endDate, personName, debtDirection, debtDueDate, addDebt]);
+  }, [
+    amount,
+    description,
+    selectedCategoryId,
+    selectedAccountId,
+    activeTab,
+    addTransaction,
+    isRecurring,
+    addRecurringRule,
+    frequency,
+    customDays,
+    nextDate,
+    endDate,
+    personName,
+    debtDirection,
+    debtDueDate,
+    addDebt,
+  ]);
 
   const canSubmit = useMemo(() => {
     const parsedAmount = parseFloat(amount);
-    const validAmount = !submitting && amount.length > 0 && !isNaN(parsedAmount) && parsedAmount > 0;
+    const validAmount =
+      !submitting &&
+      amount.length > 0 &&
+      !isNaN(parsedAmount) &&
+      parsedAmount > 0;
     if (!validAmount) return false;
 
-    if (activeTab === 'owe') return personName.trim().length > 0;
+    if (activeTab === "owe") return personName.trim().length > 0;
 
     return selectedCategoryId !== null && selectedAccountId !== null;
-  }, [amount, selectedCategoryId, selectedAccountId, submitting, activeTab, personName]);
+  }, [
+    amount,
+    selectedCategoryId,
+    selectedAccountId,
+    submitting,
+    activeTab,
+    personName,
+  ]);
 
   if (loading) {
     return (
@@ -281,53 +342,59 @@ export default function AddTransactionScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-background dark:bg-background-dark"
     >
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 64 }}
       >
         {/* Tab Switcher */}
         <View className="flex-row mx-4 mt-4 p-1 bg-surface dark:bg-surface-dark rounded-bento">
           <Pressable
-            onPress={() => setActiveTab('expense')}
+            onPress={() => setActiveTab("expense")}
             className={`flex-1 py-3 rounded-bento-sm items-center ${
-              activeTab === 'expense' ? 'bg-expense' : ''
+              activeTab === "expense" ? "bg-expense" : ""
             }`}
           >
             <Text
               className={`font-semibold ${
-                activeTab === 'expense' ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                activeTab === "expense"
+                  ? "text-white"
+                  : "text-text-secondary dark:text-text-secondary-dark"
               }`}
             >
               Expense
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => setActiveTab('income')}
+            onPress={() => setActiveTab("income")}
             className={`flex-1 py-3 rounded-bento-sm items-center ${
-              activeTab === 'income' ? 'bg-income' : ''
+              activeTab === "income" ? "bg-income" : ""
             }`}
           >
             <Text
               className={`font-semibold ${
-                activeTab === 'income' ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                activeTab === "income"
+                  ? "text-white"
+                  : "text-text-secondary dark:text-text-secondary-dark"
               }`}
             >
               Income
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => setActiveTab('owe')}
+            onPress={() => setActiveTab("owe")}
             className={`flex-1 py-3 rounded-bento-sm items-center ${
-              activeTab === 'owe' ? 'bg-primary' : ''
+              activeTab === "owe" ? "bg-primary" : ""
             }`}
           >
             <Text
               className={`font-semibold ${
-                activeTab === 'owe' ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                activeTab === "owe"
+                  ? "text-white"
+                  : "text-text-secondary dark:text-text-secondary-dark"
               }`}
             >
               Owe
@@ -364,14 +431,18 @@ export default function AddTransactionScreen() {
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder={activeTab === 'owe' ? 'e.g., Dinner at restaurant' : 'What was this for?'}
+            placeholder={
+              activeTab === "owe"
+                ? "e.g., Dinner at restaurant"
+                : "What was this for?"
+            }
             placeholderTextColor={colors.textMuted}
             className="bg-surface dark:bg-surface-dark rounded-bento px-4 py-3 text-text-primary dark:text-text-primary-dark"
           />
         </View>
 
         {/* Owe-specific fields */}
-        {activeTab === 'owe' && (
+        {activeTab === "owe" && (
           <>
             {/* Person Name */}
             <View className="mx-4 mt-4">
@@ -394,28 +465,32 @@ export default function AddTransactionScreen() {
               </Text>
               <View className="flex-row p-1 bg-surface dark:bg-surface-dark rounded-bento">
                 <Pressable
-                  onPress={() => setDebtDirection('receivable')}
+                  onPress={() => setDebtDirection("receivable")}
                   className={`flex-1 py-3 rounded-bento-sm items-center ${
-                    debtDirection === 'receivable' ? 'bg-income' : ''
+                    debtDirection === "receivable" ? "bg-income" : ""
                   }`}
                 >
                   <Text
                     className={`font-semibold ${
-                      debtDirection === 'receivable' ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                      debtDirection === "receivable"
+                        ? "text-white"
+                        : "text-text-secondary dark:text-text-secondary-dark"
                     }`}
                   >
                     They owe me
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => setDebtDirection('payable')}
+                  onPress={() => setDebtDirection("payable")}
                   className={`flex-1 py-3 rounded-bento-sm items-center ${
-                    debtDirection === 'payable' ? 'bg-expense' : ''
+                    debtDirection === "payable" ? "bg-expense" : ""
                   }`}
                 >
                   <Text
                     className={`font-semibold ${
-                      debtDirection === 'payable' ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                      debtDirection === "payable"
+                        ? "text-white"
+                        : "text-text-secondary dark:text-text-secondary-dark"
                     }`}
                   >
                     I owe them
@@ -442,13 +517,22 @@ export default function AddTransactionScreen() {
         <View className="mt-6">
           <View className="flex-row items-center justify-between mx-4 mb-2">
             <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium">
-              Category{activeTab === 'owe' ? ' (optional)' : ''}
+              Category{activeTab === "owe" ? " (optional)" : ""}
             </Text>
-            <Pressable onPress={() => router.push('/categories')}>
-              <Text style={{ color: colors.tint }} className="text-sm font-medium">Manage</Text>
+            <Pressable onPress={() => router.push("/categories")}>
+              <Text
+                style={{ color: colors.tint }}
+                className="text-sm font-medium"
+              >
+                Manage
+              </Text>
             </Pressable>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
+          >
             <View className="flex-row flex-wrap">
               {filteredCategories.map((category) => (
                 <CategoryItem
@@ -463,17 +547,26 @@ export default function AddTransactionScreen() {
         </View>
 
         {/* Account Selection (expense/income only) */}
-        {activeTab !== 'owe' && (
+        {activeTab !== "owe" && (
           <View className="mt-6">
             <View className="flex-row items-center justify-between mx-4 mb-2">
               <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium">
                 Account
               </Text>
-              <Pressable onPress={() => router.push('/accounts')}>
-                <Text style={{ color: colors.tint }} className="text-sm font-medium">Manage</Text>
+              <Pressable onPress={() => router.push("/accounts")}>
+                <Text
+                  style={{ color: colors.tint }}
+                  className="text-sm font-medium"
+                >
+                  Manage
+                </Text>
               </Pressable>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+            >
               <View className="flex-row">
                 {accounts.map((account) => (
                   <AccountItem
@@ -489,7 +582,7 @@ export default function AddTransactionScreen() {
         )}
 
         {/* Recurring Toggle (expense/income only) */}
-        {activeTab !== 'owe' && (
+        {activeTab !== "owe" && (
           <>
             <View className="mx-4 mt-4">
               <View className="flex-row items-center justify-between bg-surface dark:bg-surface-dark rounded-bento px-4 py-3">
@@ -520,9 +613,20 @@ export default function AddTransactionScreen() {
                       key={f.value}
                       onPress={() => setFrequency(f.value)}
                       className="mr-2 mb-2 px-4 py-2 rounded-bento-sm"
-                      style={{ backgroundColor: frequency === f.value ? colors.tint : colors.surfaceHover }}
+                      style={{
+                        backgroundColor:
+                          frequency === f.value
+                            ? colors.tint
+                            : colors.surfaceHover,
+                      }}
                     >
-                      <Text className="font-medium" style={{ color: frequency === f.value ? '#FFFFFF' : colors.text }}>
+                      <Text
+                        className="font-medium"
+                        style={{
+                          color:
+                            frequency === f.value ? "#FFFFFF" : colors.text,
+                        }}
+                      >
                         {f.label}
                       </Text>
                     </Pressable>
@@ -530,7 +634,7 @@ export default function AddTransactionScreen() {
                 </View>
 
                 {/* Custom Weekday Picker */}
-                {frequency === 'custom' && (
+                {frequency === "custom" && (
                   <View className="mb-3">
                     <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
                       Select Days
@@ -541,13 +645,28 @@ export default function AddTransactionScreen() {
                         return (
                           <Pressable
                             key={day.value}
-                            onPress={() => setCustomDays((prev) =>
-                              selected ? prev.filter((d) => d !== day.value) : [...prev, day.value].sort()
-                            )}
+                            onPress={() =>
+                              setCustomDays((prev) =>
+                                selected
+                                  ? prev.filter((d) => d !== day.value)
+                                  : [...prev, day.value].sort(),
+                              )
+                            }
                             className="w-10 h-10 rounded-full items-center justify-center"
-                            style={{ backgroundColor: selected ? colors.tint : colors.surfaceHover }}
+                            style={{
+                              backgroundColor: selected
+                                ? colors.tint
+                                : colors.surfaceHover,
+                            }}
                           >
-                            <Text className="text-sm font-semibold" style={{ color: selected ? '#FFFFFF' : colors.text }}>{day.short}</Text>
+                            <Text
+                              className="text-sm font-semibold"
+                              style={{
+                                color: selected ? "#FFFFFF" : colors.text,
+                              }}
+                            >
+                              {day.short}
+                            </Text>
                           </Pressable>
                         );
                       })}
@@ -558,10 +677,7 @@ export default function AddTransactionScreen() {
                 <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
                   Next Payment Date
                 </Text>
-                <DatePickerField
-                  value={nextDate}
-                  onChange={setNextDate}
-                />
+                <DatePickerField value={nextDate} onChange={setNextDate} />
                 <View className="h-3" />
                 <Text className="text-text-secondary dark:text-text-secondary-dark text-sm font-medium mb-2">
                   End Date (optional)
@@ -582,7 +698,9 @@ export default function AddTransactionScreen() {
             onPress={handleSubmit}
             disabled={!canSubmit}
             className={`py-4 rounded-bento items-center ${
-              canSubmit ? 'bg-primary' : 'bg-surface-hover dark:bg-surface-hover-dark'
+              canSubmit
+                ? "bg-primary"
+                : "bg-surface-hover dark:bg-surface-hover-dark"
             }`}
           >
             {submitting ? (
@@ -590,12 +708,14 @@ export default function AddTransactionScreen() {
             ) : (
               <Text
                 className={`font-semibold text-base ${
-                  canSubmit ? 'text-white' : 'text-text-muted dark:text-text-muted-dark'
+                  canSubmit
+                    ? "text-white"
+                    : "text-text-muted dark:text-text-muted-dark"
                 }`}
               >
-                {activeTab === 'owe'
-                  ? `Add ${debtDirection === 'receivable' ? 'Receivable' : 'Payable'}`
-                  : `Add ${activeTab === 'expense' ? 'Expense' : 'Income'}`}
+                {activeTab === "owe"
+                  ? `Add ${debtDirection === "receivable" ? "Receivable" : "Payable"}`
+                  : `Add ${activeTab === "expense" ? "Expense" : "Income"}`}
               </Text>
             )}
           </Pressable>
@@ -604,4 +724,3 @@ export default function AddTransactionScreen() {
     </KeyboardAvoidingView>
   );
 }
-
