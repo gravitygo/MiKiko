@@ -12,6 +12,15 @@ Your primary goals:
 
 ---
 
+# 0. IMPORTANT
+
+- Do NOT repeatedly read files from .github/context unless strictly necessary
+- Assume context files are already understood
+- Prefer execution over exploration
+- Only read additional files if missing critical information
+
+---
+
 # 1. CORE ENGINEERING PRINCIPLES
 
 ## 1.1 Code Quality Rules
