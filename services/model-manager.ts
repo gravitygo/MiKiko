@@ -50,44 +50,48 @@ export async function downloadModel(
 ): Promise<string> {
   ensureModelsDir();
   const url = MODEL_URLS[type];
-  const expectedSize = MODEL_SIZES[type];
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to download ${type} model: HTTP ${response.status}`);
-  }
-  if (!response.body) {
-    throw new Error(`No response body for ${type} model download`);
-  }
-
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let received = 0;
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    received += value.byteLength;
-    if (onProgress) {
-      const total =
-        Number(response.headers.get('content-length')) || expectedSize;
-      onProgress(Math.round((received / total) * 100));
-    }
-  }
-
-  const merged = new Uint8Array(received);
-  let offset = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
   const file = getModelFile(type);
-  file.create({ intermediates: true });
-  file.write(merged);
 
-  return file.uri;
+  return new Promise<string>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'arraybuffer';
+
+    xhr.onprogress = (event) => {
+      if (onProgress && event.total > 0) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      } else if (onProgress && event.loaded > 0) {
+        const expected = MODEL_SIZES[type];
+        onProgress(Math.round((event.loaded / expected) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = new Uint8Array(xhr.response as ArrayBuffer);
+          file.create({ intermediates: true });
+          file.write(data);
+          onProgress?.(100);
+          resolve(file.uri);
+        } catch (e) {
+          reject(new Error(`Failed to write ${type} model: ${e}`));
+        }
+      } else {
+        reject(new Error(`Failed to download ${type} model: HTTP ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error(`Network error downloading ${type} model`));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error(`Timeout downloading ${type} model`));
+    };
+
+    xhr.send();
+  });
 }
 
 export function deleteModel(type: ModelType): void {
