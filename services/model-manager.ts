@@ -1,6 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 const modelsDir = new Directory(Paths.document, 'models');
+const setupFlagFile = new File(Paths.document, '.setup-complete');
 
 const MODEL_FILES = {
   whisper: 'ggml-tiny.bin',
@@ -113,4 +114,12 @@ export function getModelStatus(): Record<
       sizeMB: Math.round(MODEL_SIZES.llama / 1_000_000),
     },
   };
+}
+
+export function isSetupComplete(): boolean {
+  return setupFlagFile.exists;
+}
+
+export function markSetupComplete(): void {
+  setupFlagFile.create();
 }

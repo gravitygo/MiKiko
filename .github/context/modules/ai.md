@@ -44,3 +44,11 @@ Local LLM for parsing voice transcripts → structured transaction JSON.
 - `downloadModel(type, onProgress)`: downloads from HuggingFace with progress
 - `deleteModel(type)`: remove cached model
 - `getModelStatus()`: summary of all models
+- `isSetupComplete()`: checks if first-open setup has been completed (file flag)
+- `markSetupComplete()`: marks setup as done (writes flag file)
+
+## App Boot Flow (app/_layout.tsx)
+- Phase 1: DB init + check setup flag
+- If first open → onboarding screen: permissions + model downloads
+- If returning user → silent model re-download if missing, then go to app
+- Voice screen keeps own fallback setup if user skipped onboarding downloads
