@@ -1,4 +1,4 @@
-package com.gravitygo.MiKiko
+package com.voiceapp.widget
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager

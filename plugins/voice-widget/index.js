@@ -17,15 +17,22 @@ function addWidgetReceiver(config) {
     if (!app) return cfg;
 
     // Check if receiver already exists
-    const receivers = app.receiver ?? [];
-    const exists = receivers.some(
-      (r) => r.$?.["android:name"] === ".VoiceWidgetProvider"
-    );
+    const receivers = (app.receiver ?? []).filter((r) => {
+      const name = r.$?.["android:name"];
+      return name !== ".VoiceWidgetProvider";
+    });
+    const exists = receivers.some((r) => {
+      const name = r.$?.["android:name"];
+      return (
+        name === "com.voiceapp.widget.VoiceWidgetProvider" ||
+        name === ".widget.VoiceWidgetProvider"
+      );
+    });
 
     if (!exists) {
       receivers.push({
         $: {
-          "android:name": ".VoiceWidgetProvider",
+          "android:name": "com.voiceapp.widget.VoiceWidgetProvider",
           "android:exported": "true",
         },
         "intent-filter": [
@@ -71,7 +78,7 @@ function copyWidgetFiles(config) {
       const filesToCopy = [
         {
           src: "plugins/voice-widget/android/VoiceWidgetProvider.kt",
-          dest: "java/com/gravitygo/MiKiko/VoiceWidgetProvider.kt",
+          dest: "java/com/voiceapp/widget/VoiceWidgetProvider.kt",
         },
         {
           src: "plugins/voice-widget/android/widget_voice.xml",
@@ -111,15 +118,18 @@ function copyWidgetFiles(config) {
         "values",
         "strings.xml"
       );
-      if (fs.existsSync(stringsPath)) {
-        let content = fs.readFileSync(stringsPath, "utf8");
-        if (!content.includes("widget_voice_description")) {
-          content = content.replace(
-            "</resources>",
-            '  <string name="widget_voice_description">Tap to open MiKiko voice input for quick expense logging</string>\n</resources>'
-          );
-          fs.writeFileSync(stringsPath, content, "utf8");
-        }
+      if (!fs.existsSync(stringsPath)) {
+        fs.mkdirSync(path.dirname(stringsPath), { recursive: true });
+        fs.writeFileSync(stringsPath, "<resources>\n</resources>\n", "utf8");
+      }
+
+      let content = fs.readFileSync(stringsPath, "utf8");
+      if (!content.includes("widget_voice_description")) {
+        content = content.replace(
+          "</resources>",
+          '  <string name="widget_voice_description">Tap to open MiKiko voice input for quick expense logging</string>\n</resources>'
+        );
+        fs.writeFileSync(stringsPath, content, "utf8");
       }
 
       return cfg;
