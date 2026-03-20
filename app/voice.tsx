@@ -16,7 +16,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useVoice } from "@/hooks/use-voice";
+import { PermissionsAndroid, Platform } from "react-native";
 
+async function requestMicPermission() {
+  if (Platform.OS !== "android") return true;
+
+  const granted = await PermissionsAndroid.check(
+    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+  );
+
+  if (granted) return true;
+
+  const result = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+  );
+
+  return result === PermissionsAndroid.RESULTS.GRANTED;
+}
 const speechModule = SpeechRecognition ?? null;
 
 const LANGUAGES = [
@@ -43,18 +59,16 @@ export default function VoiceScreen() {
   // Check availability on mount
   useEffect(() => {
     try {
-      const result =
-        SpeechRecognition.ExpoSpeechRecognitionModule.isRecognitionAvailable();
-
-      if (typeof result === "boolean") {
-        setAvailable(result);
-        return;
-      }
-
-      if (result && typeof (result as Promise<boolean>).then === "function") {
-        result.then(setAvailable).catch(() => setAvailable(false));
-        return;
-      }
+      const checkAvailability = async () => {
+        try {
+          const result =
+            await SpeechRecognition.ExpoSpeechRecognitionModule.isRecognitionAvailable();
+          setAvailable(result);
+        } catch {
+          setAvailable(false);
+        }
+      };
+      checkAvailability();
 
       setAvailable(false);
     } catch {
@@ -76,6 +90,7 @@ export default function VoiceScreen() {
 
     speechModule.useSpeechRecognitionEvent("error", (ev) => {
       console.warn("Speech recognition error:", ev.error);
+      console.log(ev);
       setIsListening(false);
       stopPulse();
     });
@@ -107,6 +122,13 @@ export default function VoiceScreen() {
   }, [pulseAnim]);
 
   const handleToggleListening = useCallback(async () => {
+    const hasPermission = await requestMicPermission();
+
+    if (!hasPermission) {
+      console.warn("Microphone permission denied");
+      return;
+    }
+
     if (!speechModule) return;
 
     if (isListening) {
