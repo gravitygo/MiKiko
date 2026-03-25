@@ -69,6 +69,7 @@ export function createTransactionService() {
     async add(input: CreateTransactionInput): Promise<Transaction> {
       // For credit-mode accounts, expense transactions are tracked via billing cycles
       // and should not directly affect the account balance (ghost transactions).
+      // Only auto-set when the caller has not explicitly provided an isGhost value.
       let effectiveInput = input;
       if (input.type === 'expense' && input.isGhost === undefined) {
         const account = await accountService.getById(input.accountId);

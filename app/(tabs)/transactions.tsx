@@ -62,7 +62,7 @@ function TransactionItem({
     transaction.type as "expense" | "income" | "transfer",
     accountCurrency
   );
-  const formattedDate = new Date(transaction.date.includes('T') ? transaction.date : transaction.date + 'T00:00:00').toLocaleDateString("en-US", {
+  const formattedDate = parseLocalDate(transaction.date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
@@ -119,6 +119,14 @@ function toLocalDateStr(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * Parses a YYYY-MM-DD or ISO date string as a local Date (avoids UTC midnight shift).
+ * If the string already contains 'T' it is used as-is; otherwise 'T00:00:00' is appended.
+ */
+function parseLocalDate(dateStr: string): Date {
+  return new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+}
+
 interface DateGroup {
   title: string;
   data: Transaction[];
@@ -146,7 +154,7 @@ function groupByDate(transactions: Transaction[]): DateGroup[] {
       } else if (key === yesterday) {
         title = "Yesterday";
       } else {
-        title = new Date(key + "T00:00:00").toLocaleDateString("en-US", {
+        title = parseLocalDate(key).toLocaleDateString("en-US", {
           weekday: "long",
           month: "short",
           day: "numeric",
@@ -412,7 +420,7 @@ export default function TransactionsScreen() {
       }
 
       const t = item.data;
-      const cat = categoryMap.get(t.categoryId ?? "");
+      const cat = t.categoryId ? categoryMap.get(t.categoryId) : undefined;
       const acc = accountMap.get(t.accountId);
 
       return (
@@ -688,7 +696,7 @@ export default function TransactionsScreen() {
               const isExpanded = expandedCycleId === cycle.id;
               const cycleAccount = accounts.find((a) => a.id === cycle.accountId);
               const txs = ccCycleTransactions[cycle.id] ?? [];
-              const deadlineDate = new Date(cycle.deadlineDate + "T00:00:00");
+              const deadlineDate = parseLocalDate(cycle.deadlineDate);
               const deadlineDisplay = deadlineDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
               const urgencyColor = cycle.isOverdue ? "#FF6B6B" : cycle.daysUntilDeadline <= 7 ? "#F59E0B" : "#05DF72";
 
@@ -786,8 +794,8 @@ export default function TransactionsScreen() {
                         </Text>
                       ) : (
                         txs.map((tx) => {
-                          const cat = categoryMap.get(tx.categoryId ?? "");
-                          const txDate = new Date(tx.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                          const cat = tx.categoryId ? categoryMap.get(tx.categoryId) : undefined;
+                          const txDate = parseLocalDate(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
                           return (
                             <View key={tx.id} className="flex-row items-center px-4 py-2.5 border-b border-surface-hover dark:border-surface-hover-dark">
                               <View
