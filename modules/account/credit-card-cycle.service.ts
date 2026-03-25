@@ -28,13 +28,19 @@ function getBillingCycleDates(
   };
 }
 
-function getDeadlineDate(billingEndDate: Date, deadlineDay: number): Date {
+/**
+ * Compute the actual due date given the billing end date context.
+ * When the billing day falls on or after the due day of the month,
+ * the due date must be pushed to the following month — you cannot
+ * be given a due date before you have been billed.
+ */
+function getDeadlineDate(billingEndDate: Date, billingDay: number, deadlineDay: number): Date {
   const year = billingEndDate.getFullYear();
   const month = billingEndDate.getMonth();
-  if (deadlineDay > billingEndDate.getDate()) {
-    return new Date(year, month, deadlineDay);
+  if (billingDay >= deadlineDay) {
+    return new Date(year, month + 1, deadlineDay);
   }
-  return new Date(year, month + 1, deadlineDay);
+  return new Date(year, month, deadlineDay);
 }
 
 function toDateString(date: Date): string {
@@ -75,7 +81,7 @@ export function createCreditCardCycleService() {
       }
 
       const { startDate, endDate } = getBillingCycleDates(account.billingDate);
-      const deadline = getDeadlineDate(endDate, account.deadlineDate);
+      const deadline = getDeadlineDate(endDate, account.billingDate, account.deadlineDate);
 
       const endDateStr = toDateString(endDate);
 
